@@ -13,7 +13,6 @@ const getExpenses = async (req: Request, res: Response): Promise<void> => {
 
 const addExpense = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log(req.body, "body???");
     const body = req.body as Pick<IExpense, "name" | "cost" | "userId">;
     const expense: IExpense = new Expense({
       name: body.name,

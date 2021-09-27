@@ -14,6 +14,7 @@ app.use(express.json());
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(routes);
+
 const options = { useNewUrlParser: true, useUnifiedTopology: true };
 
 mongoose.set("useFindAndModify", false);

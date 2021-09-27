@@ -49,14 +49,13 @@ export const postLogin = async (
       }
       if (!user) {
         // req.flash("errors", { info.message });
-        return res.redirect("/login");
+        res.json({ err: info.message });
       }
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
-        // req.flash("success", { msg: "Success! You are logged in." });
-        // res.redirect(req.session.returnTo || "/");
+        res.json({ message: info.message });
       });
     }
   )(req, res, next);
