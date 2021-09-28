@@ -14,7 +14,7 @@ import { CallbackError, NativeError } from "mongoose";
  */
 export const getLogin = (req: Request, res: Response): void => {
   if (req.user) {
-    res.json({ err: "error" });
+    res.json({ user: req?.user });
   }
   res.json({ message: "logged in" });
 };
@@ -35,10 +35,10 @@ export const postLogin = async (
   await sanitize("email").normalizeEmail({ gmail_remove_dots: false }).run(req);
 
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     // req.flash("errors", errors.array());
-    res.json({ err: "error" });
+    res.status(401).json({ error: "validation errors" });
+    return next(errors);
   }
 
   passport.authenticate(
@@ -48,9 +48,8 @@ export const postLogin = async (
         return next(err);
       }
       if (!user) {
-        // req.flash("errors", { info.message });
-        // res.status(401);
-        res.json({ err: "error signing in" });
+        res.status(401).json({ err: "error signing in" });
+        return next(err);
       }
       req.logIn(user, (err) => {
         if (err) {
@@ -103,8 +102,8 @@ export const postSignup = async (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    // req.flash("errors", errors.array());
-    res.json({ error: "error" });
+    res.status(403).json({ error: "validation error" });
+    return next(errors);
   }
 
   const user = new User({
@@ -119,10 +118,9 @@ export const postSignup = async (
         return next(err);
       }
       if (existingUser) {
-        // req.flash("errors", {
-        //   msg: "Account with that email address already exists.",
-        // });
-        res.json({ error: "error" });
+        res
+          .status(403)
+          .json({ error: "Account with that email address already exists." });
       }
       user.save((err) => {
         if (err) {
@@ -132,7 +130,7 @@ export const postSignup = async (
           if (err) {
             return next(err);
           }
-          res.json({ error: "error" });
+          res.status(200).json({ message: "Account created successfully" });
         });
       });
     }
