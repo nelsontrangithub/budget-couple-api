@@ -49,13 +49,14 @@ export const postLogin = async (
       }
       if (!user) {
         // req.flash("errors", { info.message });
-        res.json({ err: info.message });
+        // res.status(401);
+        res.json({ err: "error signing in" });
       }
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
-        res.json({ message: info.message });
+        res.json({ message: "success" });
       });
     }
   )(req, res, next);
@@ -169,9 +170,8 @@ export const postUpdateProfile = async (
 
   const user = req.user as UserDocument;
   User.findById(user.id, (err: NativeError, user: UserDocument) => {
-    if (err) {
-      return next(err);
-    }
+    if (err) return next(err);
+
     user.email = req.body.email || "";
     user.profile.name = req.body.name || "";
     // user.save((err: WriteError & CallbackError) => {
