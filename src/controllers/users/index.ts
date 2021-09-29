@@ -2,21 +2,19 @@ import async from "async";
 import passport from "passport";
 import { User, UserDocument, AuthToken } from "../../types/user";
 import { Request, Response, NextFunction } from "express";
-import { IVerifyOptions } from "passport-local";
 import { WriteError } from "mongodb";
 import { check, sanitize, validationResult } from "express-validator";
 import "../../config/passport";
-import { CallbackError, NativeError } from "mongoose";
+import { NativeError } from "mongoose";
 
 /**
  * Login page.
  * @route GET /login
  */
 export const getLogin = (req: Request, res: Response): void => {
-  if (req.user) {
-    res.json({ user: req?.user });
-  }
-  res.json({ message: "logged in" });
+  if (req.user) res.json({ user: req?.user });
+
+  res.json({ msg: "logged in" });
 };
 
 /**
@@ -36,29 +34,24 @@ export const postLogin = async (
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    // req.flash("errors", errors.array());
     res.status(401).json({ error: "validation errors" });
     return next(errors);
   }
 
-  passport.authenticate(
-    "local",
-    (err: Error, user: UserDocument, info: IVerifyOptions) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        res.status(401).json({ err: "error signing in" });
-        return next(err);
-      }
-      req.logIn(user, (err) => {
-        if (err) {
-          return next(err);
-        }
-        res.json({ message: "success" });
-      });
+  passport.authenticate("local", (err: Error, user: UserDocument) => {
+    if (err) return next(err);
+
+    if (!user) {
+      res.status(401).json({ err: "error signing in" });
+      return next(err);
     }
-  )(req, res, next);
+
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+
+      res.status(200).json({ msg: "success" });
+    });
+  })(req, res, next);
 };
 
 /**
@@ -75,10 +68,8 @@ export const logout = (req: Request, res: Response): void => {
  * @route GET /signup
  */
 export const getSignup = (req: Request, res: Response): void => {
-  if (req.user) {
-    return res.redirect("/");
-  }
-  res.json({ message: "getting sign up" });
+  if (req.user) return res.redirect("/");
+  res.json({ msg: "getting sign up" });
 };
 
 /**
@@ -114,35 +105,25 @@ export const postSignup = async (
   User.findOne(
     { email: req.body.email },
     (err: NativeError, existingUser: UserDocument) => {
-      if (err) {
-        return next(err);
-      }
+      if (err) return next(err);
+
       if (existingUser) {
         res
           .status(403)
           .json({ error: "Account with that email address already exists." });
       }
+
       user.save((err) => {
-        if (err) {
-          return next(err);
-        }
+        if (err) return next(err);
+
         req.logIn(user, (err) => {
-          if (err) {
-            return next(err);
-          }
-          res.status(200).json({ message: "Account created successfully" });
+          if (err) return next(err);
+
+          res.status(200).json({ msg: "Account created successfully" });
         });
       });
     }
   );
-};
-
-/**
- * Profile page.
- * @route GET /account
- */
-export const getAccount = (req: Request, res: Response): void => {
-  res.json({ message: "getting account" });
 };
 
 /**
@@ -162,8 +143,8 @@ export const postUpdateProfile = async (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    // req.flash("errors", errors.array());
-    return res.redirect("/account");
+    res.status(400).json({ error: "validation error" });
+    return next(errors);
   }
 
   const user = req.user as UserDocument;
@@ -172,19 +153,11 @@ export const postUpdateProfile = async (
 
     user.email = req.body.email || "";
     user.profile.name = req.body.name || "";
-    // user.save((err: WriteError & CallbackError) => {
-    //   if (err) {
-    //     if (err.code === 11000) {
-    //       // req.flash("errors", {
-    //       //   msg: "The email address you have entered is already associated with an account.",
-    //       // });
-    //       return res.redirect("/account");
-    //     }
-    //     return next(err);
-    //   }
-    //   // req.flash("success", { msg: "Profile information has been updated." });
-    //   res.redirect("/account");
-    // });
+    user.save((err) => {
+      if (err) return next(err);
+
+      res.status(200).json({ msg: "Profile information has been updated." });
+    });
   });
 };
 
@@ -207,23 +180,26 @@ export const postUpdatePassword = async (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    // req.flash("errors", errors.array());
-    return res.redirect("/account");
+    res.status(400).json({ error: "validation error" });
+    return next(errors);
+  }
+
+  if (!req.user) {
+    res.status(400).json({ error: "not logged in" });
+    return next(errors);
   }
 
   const user = req.user as UserDocument;
+
   User.findById(user.id, (err: NativeError, user: UserDocument) => {
     if (err) {
       return next(err);
     }
     user.password = req.body.password;
-    // user.save((err: WriteError & CallbackError) => {
-    //   if (err) {
-    //     return next(err);
-    //   }
-    //   req.flash("success", { msg: "Password has been changed." });
-    //   res.redirect("/account");
-    // });
+    user.save((err) => {
+      if (err) return next(err);
+      res.status(200).json({ msg: "Password has been changed." });
+    });
   });
 };
 
@@ -238,12 +214,9 @@ export const postDeleteAccount = (
 ): void => {
   const user = req.user as UserDocument;
   User.remove({ _id: user.id }, (err) => {
-    if (err) {
-      return next(err);
-    }
+    if (err) return next(err);
     req.logout();
-    // req.flash("info", { msg: "Your account has been deleted." });
-    res.redirect("/");
+    res.status(200).json({ msg: "Your account has been deleted." });
   });
 };
 
@@ -259,19 +232,14 @@ export const getOauthUnlink = (
   const provider = req.params.provider;
   const user = req.user as UserDocument;
   User.findById(user.id, (err: NativeError, user: any) => {
-    if (err) {
-      return next(err);
-    }
+    if (err) return next(err);
     user[provider] = undefined;
     user.tokens = user.tokens.filter(
       (token: AuthToken) => token.kind !== provider
     );
     user.save((err: WriteError) => {
-      if (err) {
-        return next(err);
-      }
-      // req.flash("info", { msg: `${provider} account has been unlinked.` });
-      res.redirect("/account");
+      if (err) return next(err);
+      res.status(200).json({ msg: `${provider} account has been unlinked.` });
     });
   });
 };
@@ -292,16 +260,14 @@ export const getReset = (
     .where("passwordResetExpires")
     .gt(Date.now())
     .exec((err, user) => {
-      if (err) {
+      if (err) return next(err);
+      if (!user) {
+        res.status(400).json({
+          msg: "Password reset token is invalid or has expired.",
+        });
         return next(err);
       }
-      if (!user) {
-        // req.flash("errors", {
-        //   msg: "Password reset token is invalid or has expired.",
-        // });
-        return res.redirect("/forgot");
-      }
-      res.json({ message: "forgot password" });
+      res.status(200);
     });
 };
 
@@ -324,8 +290,8 @@ export const postReset = async (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    // req.flash("errors", errors.array());
-    return res.redirect("back");
+    res.status(400).json({ error: "validation error" });
+    return next(errors);
   }
 
   async.waterfall(
@@ -338,11 +304,12 @@ export const postReset = async (
             if (err) {
               return next(err);
             }
+
             if (!user) {
-              // req.flash("errors", {
-              //   msg: "Password reset token is invalid or has expired.",
-              // });
-              return res.redirect("back");
+              res.status(400).json({
+                error: "Password reset token is invalid or has expired.",
+              });
+              return next(err);
             }
             user.password = req.body.password;
             user.passwordResetToken = undefined;
@@ -354,15 +321,14 @@ export const postReset = async (
               req.logIn(user, (err) => {
                 done(err, user);
               });
+              res.status(200);
             });
           });
       },
     ],
     (err) => {
-      if (err) {
-        return next(err);
-      }
-      res.redirect("/");
+      if (err) next(err);
+      res.status(400);
     }
   );
 };
@@ -375,5 +341,5 @@ export const getForgot = (req: Request, res: Response): void => {
   if (req.isAuthenticated()) {
     return res.redirect("/");
   }
-  res.json({ message: "getting sign up" });
+  res.status(200).json({ msg: "getting sign up" });
 };
