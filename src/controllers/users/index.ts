@@ -49,7 +49,7 @@ export const postLogin = async (
     req.logIn(user, (err) => {
       if (err) return next(err);
 
-      res.status(200).json({ msg: "success" });
+      res.status(200).json({ user, msg: "success" });
     });
   })(req, res, next);
 };
@@ -100,6 +100,12 @@ export const postSignup = async (
   const user = new User({
     email: req.body.email,
     password: req.body.password,
+    profile: {
+      income: {
+        you: 0,
+        partner: 0,
+      },
+    },
   });
 
   User.findOne(
@@ -119,7 +125,7 @@ export const postSignup = async (
         req.logIn(user, (err) => {
           if (err) return next(err);
 
-          res.status(200).json({ msg: "Account created successfully" });
+          res.status(200).json({ user, msg: "Account created successfully" });
         });
       });
     }

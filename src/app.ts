@@ -24,6 +24,9 @@ app.use(
       url: mongoUrl,
       autoReconnect: true,
     }),
+    cookie: {
+      maxAge: 1000 * 30,
+    },
   })
 );
 app.use(passport.initialize());

@@ -6,16 +6,18 @@ import {
   updateExpense,
 } from "../controllers/expenses";
 import * as userController from "../controllers/users/index";
+import * as passportConfig from "../config/passport";
 
 const router: Router = Router();
 
-router.get("/expenses", getExpenses);
-
-router.post("/add-expense", addExpense);
-
-router.put("/edit-expense/:id", updateExpense);
-
-router.delete("/delete-expense/:id", deleteExpense);
+router.get("/expenses/", passportConfig.isAuthenticated, getExpenses);
+router.post("/add-expense/", passportConfig.isAuthenticated, addExpense);
+router.put("/edit-expense/:id", passportConfig.isAuthenticated, updateExpense);
+router.delete(
+  "/delete-expense/:id",
+  passportConfig.isAuthenticated,
+  deleteExpense
+);
 
 router.get("/login", userController.getLogin);
 router.post("/login", userController.postLogin);
