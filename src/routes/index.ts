@@ -27,6 +27,15 @@ router.get("/reset/:token", userController.getReset);
 router.post("/reset/:token", userController.postReset);
 router.get("/signup", userController.getSignup);
 router.post("/signup", userController.postSignup);
-router.post("/update-password", userController.postUpdatePassword);
+router.post(
+  "/update-password",
+  passportConfig.isAuthenticated,
+  userController.postUpdatePassword
+);
+router.post(
+  "/update-incomes",
+  passportConfig.isAuthenticated,
+  userController.postUpdateProfileIncome
+);
 
 export default router;

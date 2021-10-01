@@ -102,8 +102,8 @@ export const postSignup = async (
     password: req.body.password,
     profile: {
       income: {
-        you: 0,
-        partner: 0,
+        you: 80000,
+        partner: 80000,
       },
     },
   });
@@ -162,6 +162,38 @@ export const postUpdateProfile = async (
     user.save((err) => {
       if (err) return next(err);
 
+      res.status(200).json({ msg: "Profile information has been updated." });
+    });
+  });
+};
+
+/**
+ * Update profile income information.
+ * @route POST /user/incomes
+ */
+export const postUpdateProfileIncome = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  await check("you", "Please enter a valid number.").isNumeric().run(req);
+  await check("partner", "Please enter a valid number").isNumeric().run(req);
+
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    res.status(400).json({ error: "validation error" });
+    return next(errors);
+  }
+
+  const userId = req.user as UserDocument;
+  User.findById(userId, (err: NativeError, user: UserDocument) => {
+    if (err) return next(err);
+    user.profile.income.you = req.body.you;
+    user.profile.income.partner = req.body.partner;
+    user.markModified("profile");
+    user.save((err) => {
+      if (err) return next(err);
       res.status(200).json({ msg: "Profile information has been updated." });
     });
   });
