@@ -12,8 +12,15 @@ const MongoStore = mongo(session);
 const app: Express = express();
 const mongoUrl = MONGODB_URI ?? "";
 const PORT: string | number = process.env.PORT || 4000;
+const originURL: string = process.env.ORIGIN_URL || "http://localhost:3001";
 
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: originURL,
+    exposedHeaders: ["set-cookie"],
+  })
+);
 app.use(express.json());
 app.use(
   session({
@@ -26,6 +33,8 @@ app.use(
     }),
     cookie: {
       maxAge: 1000 * 30,
+      httpOnly: false,
+      // secure: true,
     },
   })
 );

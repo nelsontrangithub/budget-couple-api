@@ -6,6 +6,8 @@ import { WriteError } from "mongodb";
 import { check, sanitize, validationResult } from "express-validator";
 import "../../config/passport";
 import { NativeError } from "mongoose";
+import { IExpense } from "./../../types/expense";
+import Expense from "../../models/expense";
 
 /**
  * Login page.
@@ -13,8 +15,26 @@ import { NativeError } from "mongoose";
  */
 export const getLogin = (req: Request, res: Response): void => {
   if (req.user) res.json({ user: req?.user });
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(401).json({ error: "validation errors" });
+  }
 
   res.json({ msg: "logged in" });
+};
+
+export const getUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = await User.findById(req.user ?? "").select("-password");
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(404).json({ err: "error signing in" });
+    return next(err);
+  }
 };
 
 /**
@@ -46,10 +66,10 @@ export const postLogin = async (
       return next(err);
     }
 
-    req.logIn(user, (err) => {
+    req.logIn(user, async (err) => {
       if (err) return next(err);
-
-      res.status(200).json({ user, msg: "success" });
+      const expenses: IExpense[] = await Expense.find({ userId: user.id });
+      res.status(200).json({ user, expenses, msg: "success" });
     });
   })(req, res, next);
 };
