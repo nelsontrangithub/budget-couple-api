@@ -11,9 +11,12 @@
     "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.2",
     "@types/mongodb": "3.6.5",
+    "@types/passport-jwt": "^3.0.6",
     "async": "3.2.0",
     "bcrypt-nodejs": "0.0.3",
+    "bcryptjs": "^2.4.3",
     "bluebird": "3.7.2",
     "body-parser": "1.19.0",
     "bson": "^4.5.2",
@@ -27,12 +30,15 @@
     "express-session": "1.17.1",
     "express-validator": "6.9.2",
     "fbgraph": "1.4.4",
+    "history": "^5.1.0",
+    "jsonwebtoken": "^8.5.1",
     "lodash": "4.17.20",
     "lusca": "1.6.1",
     "mongoose": "5.11.15",
     "nodemailer": "6.4.17",
     "passport": "0.4.1",
     "passport-facebook": "3.0.0",
+    "passport-jwt": "^4.0.0",
     "passport-local": "1.0.0",
     "pug": "3.0.0",
     "winston": "3.3.3"

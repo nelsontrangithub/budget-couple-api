@@ -22,7 +22,7 @@ router.delete(
 router.get("/user", passportConfig.isAuthenticated, userController.getUser);
 router.get("/login", passportConfig.isAuthenticated, userController.getLogin);
 router.post("/login", userController.postLogin);
-router.get("/logout", userController.logout);
+router.get("/logout", passportConfig.isAuthenticated, userController.logout);
 router.get("/forgot", userController.getForgot);
 router.get("/reset/:token", userController.getReset);
 router.post("/reset/:token", userController.postReset);

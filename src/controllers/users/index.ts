@@ -1,5 +1,4 @@
 import async from "async";
-import passport from "passport";
 import { User, UserDocument, AuthToken } from "../../types/user";
 import { Request, Response, NextFunction } from "express";
 import { WriteError } from "mongodb";
@@ -8,6 +7,13 @@ import "../../config/passport";
 import { NativeError } from "mongoose";
 import { IExpense } from "./../../types/expense";
 import Expense from "../../models/expense";
+import jwt from "jsonwebtoken";
+import { SESSION_SECRET, REFRESH_SECRET } from "../../utils/secrets";
+
+const refreshTokens: string[] = [];
+
+const generateAccessToken = (user: Pick<UserDocument, "email" | "id">) =>
+  jwt.sign(user, SESSION_SECRET, { expiresIn: "15m" });
 
 /**
  * Login page.
@@ -58,20 +64,41 @@ export const postLogin = async (
     return next(errors);
   }
 
-  passport.authenticate("local", (err: Error, user: UserDocument) => {
-    if (err) return next(err);
+  const user = await User.findOne({ email: req.body.email });
 
-    if (!user) {
-      res.status(401).json({ err: "error signing in" });
-      return next(err);
+  if (!user) {
+    res.status(401).json({ error: "email not found" });
+    return next(errors);
+  }
+
+  user.comparePassword(req.body.password, (err: Error, isMatch: boolean) => {
+    if (err) {
+      res.status(401).json({ error: "bad password" });
+      return next(errors);
     }
 
-    req.logIn(user, async (err) => {
-      if (err) return next(err);
-      const expenses: IExpense[] = await Expense.find({ userId: user.id });
-      res.status(200).json({ user, expenses, msg: "success" });
-    });
-  })(req, res, next);
+    if (isMatch) {
+      const token = generateAccessToken({ email: user.email, id: user.id });
+
+      const refreshToken = jwt.sign(
+        { email: user.email, id: user.id },
+        REFRESH_SECRET
+      );
+
+      refreshTokens.push(refreshToken);
+
+      req.logIn(user, async (err) => {
+        if (err) return next(err);
+        const expenses: IExpense[] = await Expense.find({ userId: user.id });
+        res
+          .status(200)
+          .json({ user, expenses, msg: "success", token, refreshToken });
+      });
+    } else {
+      res.status(401).json({ error: "bad password" });
+      return next(errors);
+    }
+  });
 };
 
 /**
@@ -400,4 +427,23 @@ export const getForgot = (req: Request, res: Response): void => {
     return res.redirect("/");
   }
   res.status(200).json({ msg: "getting sign up" });
+};
+
+export const refreshToken = (
+  req: Request,
+  res: Response
+): Response<any, Record<string, any>> | undefined => {
+  const refreshToken = req.body.token;
+  if (refreshToken == null) return res.sendStatus(401);
+  if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
+  jwt.verify(refreshToken, REFRESH_SECRET, (decoded: any) => {
+    const user = decoded as Pick<UserDocument, "email" | "id">;
+
+    if (!user.email || !user.id) {
+      return res.sendStatus(403);
+    }
+
+    const token = generateAccessToken(user);
+    res.json({ token: token });
+  });
 };

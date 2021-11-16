@@ -1,6 +1,14 @@
 import bcrypt from "bcrypt-nodejs";
 import mongoose from "mongoose";
 
+declare global {
+  namespace Express {
+    interface Request {
+      currentUser: Pick<UserDocument, "id" | "email">;
+    }
+  }
+}
+
 export type UserDocument = mongoose.Document & {
   email: string;
   password: string;

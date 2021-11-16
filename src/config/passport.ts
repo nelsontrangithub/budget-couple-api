@@ -4,6 +4,8 @@ import _ from "lodash";
 import { User, UserDocument } from "../types/user";
 import { Request, Response, NextFunction } from "express";
 import { NativeError } from "mongoose";
+import jwt from "jsonwebtoken";
+import { SESSION_SECRET } from "../utils/secrets";
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -57,10 +59,21 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ) => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.status(401);
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, SESSION_SECRET, (err, user) => {
+    console.log(err);
+    if (err) return res.sendStatus(403);
+    req.currentUser = { email: user?.email, id: user?.id };
+    next();
+  });
+
+  // if (req.isAuthenticated()) {
+  //   return next();
+  // }
+  // res.status(401);
 };
 
 /**

@@ -4,7 +4,9 @@ import Expense from "../../models/expense";
 
 const getExpenses = async (req: Request, res: Response): Promise<void> => {
   try {
-    const expenses: IExpense[] = await Expense.find({ userId: req.user });
+    const expenses: IExpense[] = await Expense.find({
+      userId: req.currentUser.id,
+    });
     res.status(200).json({ expenses });
   } catch (error) {
     throw error;
@@ -17,11 +19,13 @@ const addExpense = async (req: Request, res: Response): Promise<void> => {
     const expense: IExpense = new Expense({
       name: body.name,
       cost: body.cost,
-      userId: req.user,
+      userId: req.currentUser.id,
     });
 
     const newExpense: IExpense = await expense.save();
-    const allExpenses: IExpense[] = await Expense.find({ userId: req.user });
+    const allExpenses: IExpense[] = await Expense.find({
+      userId: req.currentUser.id,
+    });
 
     res.status(201).json({
       message: "Expense added",
@@ -43,7 +47,9 @@ const updateExpense = async (req: Request, res: Response): Promise<void> => {
       { _id: id },
       body
     );
-    const allExpenses: IExpense[] = await Expense.find({ userId: req.user });
+    const allExpenses: IExpense[] = await Expense.find({
+      userId: req.currentUser.id,
+    });
     res.status(200).json({
       message: "Expense updated",
       expense: updateExpense,
@@ -59,7 +65,9 @@ const deleteExpense = async (req: Request, res: Response): Promise<void> => {
     const deletedExpense: IExpense | null = await Expense.findByIdAndRemove(
       req.params.id
     );
-    const allExpenses: IExpense[] = await Expense.find({ userId: req.user });
+    const allExpenses: IExpense[] = await Expense.find({
+      userId: req.currentUser.id,
+    });
     res.status(200).json({
       message: "Expense deleted",
       expense: deletedExpense,
